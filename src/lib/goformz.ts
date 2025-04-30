@@ -14,7 +14,7 @@ interface DWRForm {
 }
 
 interface GoFormzForm {
-  id: string;
+  formId: string;
   fields: Record<string, { value: string }>;
 }
 
@@ -94,12 +94,10 @@ export async function getFormsForDate(target: Date): Promise<GoFormzForm[]> {
       },
     });
     
-    if (response.data && Array.isArray(response.data)) {
-      console.log(`Found ${response.data.length} forms in direct array`);
-      return response.data;
-    }
-    
-    return [];
+    // Handle both direct array and paginated responses
+    const items = Array.isArray(response.data) ? response.data : response.data.items ?? [];
+    console.log(`Found ${items.length} forms`);
+    return items;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("GoFormz API Error:", error.response?.status, error.response?.data);
@@ -116,23 +114,23 @@ export function getYesterdayForms(date: Date): Promise<GoFormzForm[]> {
 
 export async function fetchFormData(formId: string): Promise<DWRForm> {
   const accessToken = await getCachedAccessToken();
-  const response = await goformzApi.get(`/forms/${formId}`, {
+  const response = await goformzApi.get(`/formz/${formId}`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
     },
   });
   const form = response.data;
   
-  // TODO: Update these field mappings to match your GoFormz template field names
+  // Updated field mappings to match Honda DWR template
   return {
-    date: form.fields['DWR_Date']?.value || '',
-    name: form.fields['Employee_Name']?.value || '',
-    job: form.fields['Job_Number']?.value || '',
+    date: form.fields['Date']?.value || '',
+    name: form.fields['Employee Name']?.value || '',
+    job: form.fields['Job Number']?.value || '',
     location: form.fields['Location']?.value || '',
-    work: form.fields['Work_Description']?.value || '',
+    work: form.fields['Work Description']?.value || '',
     machine: form.fields['Machine']?.value || '',
-    unit: form.fields['Unit_Number']?.value || '',
+    unit: form.fields['Unit Number']?.value || '',
     hours: form.fields['Hours']?.value || '',
     notes: form.fields['Notes']?.value || '',
   };
-} 
+}

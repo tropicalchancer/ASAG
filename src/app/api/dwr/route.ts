@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getFormsForDate, fetchFormData } from '@/lib/goformz';
+import { getFormsForDate, fetchFormData } from '../../../lib/goformz';
 
 export async function GET(req: Request) {
   try {
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     }
 
     console.log(`Found ${forms.length} forms, fetching details...`);
-    const rows = await Promise.all(forms.map(f => fetchFormData(f.id)));
+    const rows = await Promise.all(forms.map(({ formId }) => fetchFormData(formId)));
     return NextResponse.json(rows);
   } catch (err) {
     console.error("DWR API error:", err);
