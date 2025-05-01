@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { getAccessToken } from '../../../lib/goformzAuth';
 
 // Direct API test to understand GoFormz responses
 export async function GET(req: Request) {
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
     }
     
     // 1. First get an access token
-    const tokenResponse = await getAccessToken();
+    const accessToken = await getAccessToken();
     
     // 2. Format the request details
     const templateId = process.env.GOFORMZ_TEMPLATE_ID || '';
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
       },
       endpoints: {
         v2templates: await testEndpoint(
-          tokenResponse.access_token,
+          accessToken,
           `/templates/${templateId}/formz`,
           {
             status: 'complete',
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
           }
         ),
         v2formz: await testEndpoint(
-          tokenResponse.access_token,
+          accessToken,
           '/formz',
           {
             templateId: templateId,
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
           }
         ),
         v2FormsGet: await testEndpoint(
-          tokenResponse.access_token,
+          accessToken,
           '/forms',
           {
             templateId: templateId,
@@ -88,23 +89,6 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-}
-
-async function getAccessToken() {
-  const params = new URLSearchParams({
-    grant_type: 'client_credentials',
-    scope: 'public_api',
-    client_id: process.env.GOFORMZ_CLIENT_ID!,
-    client_secret: process.env.GOFORMZ_CLIENT_SECRET!
-  });
-  
-  const response = await axios.post('https://accounts.goformz.com/connect/token', params, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  });
-  
-  return response.data;
 }
 
 async function testEndpoint(token: string, endpoint: string, params: Record<string, string>) {

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccessToken } from './goformzAuth';
 
 // TODO: Update these field names to match your GoFormz template
 interface DWRForm {
@@ -18,53 +19,13 @@ interface GoFormzForm {
   fields: Record<string, { value: string }>;
 }
 
-// Create axios instance for OAuth token requests
-const authApi = axios.create({
-  baseURL: 'https://accounts.goformz.com/connect',
-});
-
 // Create axios instance for GoFormz API
 const goformzApi = axios.create({
   baseURL: 'https://api.goformz.com/v2',
 });
 
-// Get OAuth access token
-async function getAccessToken(): Promise<string> {
-  try {
-    const params = new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'public_api',
-      client_id: process.env.GOFORMZ_CLIENT_ID!,
-      client_secret: process.env.GOFORMZ_CLIENT_SECRET!
-    });
-    const response = await authApi.post('/token', params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error getting access token:', error);
-    throw error;
-  }
-}
-
-// 3. Implement token caching (simplified example)
-let cachedToken: string | null = null;
-let tokenExpiry: number | null = null;
-
-async function getCachedAccessToken(): Promise<string> {
-  if (cachedToken && tokenExpiry && Date.now() < tokenExpiry - 60000) {
-    return cachedToken;
-  }
-  const token = await getAccessToken();
-  cachedToken = token;
-  tokenExpiry = Date.now() + 3600000; // Assume 1 hour expiry for example
-  return token;
-}
-
 export async function getFormsForDate(target: Date): Promise<GoFormzForm[]> {
-  const accessToken = await getCachedAccessToken();
+  const accessToken = await getAccessToken();
   
   // Build start = 00:00:00 UTC of target date
   // End = 23:59:59 UTC of target date
@@ -113,7 +74,7 @@ export function getYesterdayForms(date: Date): Promise<GoFormzForm[]> {
 }
 
 export async function fetchFormData(formId: string): Promise<DWRForm> {
-  const accessToken = await getCachedAccessToken();
+  const accessToken = await getAccessToken();
   const response = await goformzApi.get(`/formz/${formId}`, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
